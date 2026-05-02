@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/proxy-js.js": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/.netlify/functions/proxy-js", "destination": "/api/proxy-js" }
+  ]
+}

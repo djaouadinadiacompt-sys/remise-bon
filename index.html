@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remise Bon d'achat</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', Arial, sans-serif; background: #eef2ff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card { background: white; border-radius: 20px; padding: 32px 26px; width: 100%; max-width: 430px; box-shadow: 0 8px 32px rgba(26,115,232,0.10); }
+    h2 { color: #1a73e8; text-align: center; margin-bottom: 4px; font-size: 22px; font-weight: 700; }
+    .subtitle { text-align: center; color: #aaa; font-size: 13px; margin-bottom: 28px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 6px; margin-top: 18px; }
+    select { width: 100%; padding: 12px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; outline: none; transition: border 0.2s; background: #f7f9ff; font-family: inherit; }
+    select:focus { border-color: #1a73e8; background: white; }
+    .photo-zone { border: 2px dashed #1a73e8; border-radius: 14px; padding: 26px 20px; text-align: center; cursor: pointer; margin-top: 6px; background: #f0f5ff; transition: all 0.2s; position: relative; }
+    .photo-zone:hover { background: #e3ecff; }
+    .photo-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .photo-icon { font-size: 34px; margin-bottom: 6px; }
+    .photo-text { color: #1a73e8; font-weight: 600; font-size: 14px; }
+    .photo-hint { color: #aaa; font-size: 12px; margin-top: 4px; }
+    .preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .preview-item { position: relative; width: 80px; height: 80px; }
+    .preview-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; }
+    .del-btn { position: absolute; top: -6px; right: -6px; background: #f44336; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 15px; cursor: pointer; line-height: 22px; text-align: center; }
+    .photo-count { text-align: center; color: #888; font-size: 13px; margin-top: 10px; }
+    .btn { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 24px; transition: all 0.2s; font-family: inherit; }
+    .btn:hover { background: #1557b0; transform: translateY(-1px); }
+    .btn:disabled { background: #b0c4e8; cursor: not-allowed; transform: none; }
+    .demandes-list { margin-top: 6px; }
+    .demande-item { padding: 13px 14px; border: 1.5px solid #eee; border-radius: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
+    .demande-item:hover, .demande-item.selected { border-color: #1a73e8; background: #f0f5ff; }
+    .demande-num { font-weight: 700; color: #1a73e8; font-size: 15px; }
+    .demande-montant { color: #555; font-size: 13px; }
+    .success { background: #e8f5e9; border: 1px solid #4caf50; border-radius: 12px; padding: 18px; text-align: center; color: #2e7d32; font-weight: 600; display: none; margin-top: 18px; font-size: 15px; }
+    .error-msg { background: #fdecea; border: 1px solid #f44336; border-radius: 10px; padding: 13px; color: #c62828; font-size: 13px; margin-top: 14px; display: none; }
+    .loading { text-align: center; color: #aaa; padding: 22px; font-size: 14px; }
+    .step { display: none; }
+    .step.active { display: block; }
+    .back-btn { background: none; border: none; color: #1a73e8; font-size: 13px; cursor: pointer; margin-bottom: 16px; padding: 0; font-family: inherit; }
+    .progress-bar { width: 100%; background: #eee; border-radius: 10px; margin-top: 14px; display: none; overflow: hidden; }
+    .progress-fill { height: 8px; background: linear-gradient(90deg, #1a73e8, #43a3ff); border-radius: 10px; transition: width 0.4s; width: 0%; }
+    .error-detail { font-size: 11px; color: #999; margin-top: 5px; word-break: break-all; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>📋 Remise Bon d'achat</h2>
+  <p class="subtitle">Soumettez votre bon d'achat facilement</p>
+
+  <!-- STEP 1 : Mois + Nom -->
+  <div class="step active" id="step1">
+    <label>📅 Mois</label>
+    <select id="selectMois">
+      <option value="">-- Sélectionnez le mois --</option>
+      <option value="Fevrier">Février</option>
+      <option value="Mars">Mars</option>
+      <option value="Avril">Avril</option>
+      <option value="Mai">Mai</option>
+      <option value="Juin">Juin</option>
+    </select>
+    <label>👤 Votre nom</label>
+    <select id="selectNom">
+      <option value="">-- Sélectionnez votre nom --</option>
+    </select>
+    <div id="loadingNoms" class="loading" style="display:none">⏳ Chargement des noms...</div>
+    <button class="btn" id="btnContinuer" onclick="chargerDemandes()" disabled>Continuer →</button>
+  </div>
+
+  <!-- STEP 2 : Liste des demandes -->
+  <div class="step" id="step2">
+    <button class="back-btn" onclick="retourStep1()">← Retour</button>
+    <label>📝 Choisissez votre demande</label>
+    <div class="demandes-list" id="demandesList"></div>
+    <div id="loadingDemandes" class="loading" style="display:none">⏳ Chargement des demandes...</div>
+  </div>
+
+  <!-- STEP 3 : Upload photo + Soumettre -->
+  <div class="step" id="step3">
+    <button class="back-btn" onclick="retourStep2()">← Retour</button>
+    <div style="background:#f0f5ff;border-radius:12px;padding:14px;margin-bottom:18px;">
+      <div style="font-size:12px;color:#888;">Demande sélectionnée</div>
+      <div style="font-size:17px;font-weight:700;color:#1a73e8;" id="selectedNumero"></div>
+      <div style="font-size:13px;color:#555;" id="selectedMontant"></div>
+    </div>
+    <label>📸 Photos du bon (max 5)</label>
+    <div class="photo-zone" id="photoZone">
+      <!--
+        CORRECTION : multiple permet de sélectionner plusieurs photos à la fois.
+        On retire capture="environment" pour que l'utilisateur puisse aussi choisir
+        depuis la galerie sans forcer la caméra.
+      -->
+      <input type="file" id="fileInput" accept="image/*" multiple onchange="ajouterPhotos(this)">
+      <div class="photo-icon">📷</div>
+      <div class="photo-text">Appuyer pour ajouter une photo</div>
+      <div class="photo-hint">ou importer depuis la galerie</div>
+    </div>
+    <div class="preview-grid" id="previewGrid"></div>
+    <div class="photo-count" id="photoCount"></div>
+    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+    <button class="btn" id="btnSoumettre" onclick="soumettre()" disabled>✅ Soumettre le bon</button>
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="success" id="successMsg">✅ Bon soumis avec succès !<br><small style="font-weight:400;">Merci !</small></div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // CONFIGURATION — Mettez à jour ces deux valeurs
+  // ============================================================
+  var SCRIPT_URL = '/.netlify/functions/proxy-js'; // votre proxy Netlify
+  var IMGBB_KEY  = 'adc6b237a9ad9924c2b096a52f980bf1'; // votre clé ImgBB
+
+  // ============================================================
+  // État global
+  // ============================================================
+  var selectedNom = '';
+  var selectedMois = '';
+  var selectedDemande = null;
+  var photos = []; // [{base64, dataUrl}]
+
+  // ============================================================
+  // Appel au proxy (GET simple)
+  // ============================================================
+  function callScript(params) {
+    var qs = Object.keys(params).map(function(k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    return fetch(SCRIPT_URL + '?' + qs)
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      });
+  }
+
+  // ============================================================
+  // Upload ImgBB avec gestion d'erreur détaillée
+  // ============================================================
+  function uploadImgBB(base64) {
+    var formData = new FormData();
+    formData.append('image', base64);
+    formData.append('key', IMGBB_KEY);
+    return fetch('https://api.imgbb.com/1/upload', {
+      method: 'POST',
+      body: formData
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('ImgBB HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(res) {
+      if (res && res.success) return res.data.url;
+      // Afficher le message d'erreur ImgBB exact
+      var msg = (res && res.error && res.error.message) ? res.error.message : JSON.stringify(res);
+      throw new Error('ImgBB: ' + msg);
+    });
+  }
+
+  // ============================================================
+  // Initialisation : charger les noms pour le mois par défaut
+  // ============================================================
+  window.onload = function() {
+    document.getElementById('selectMois').addEventListener('change', function() {
+      var mois = this.value;
+      verifierSelection();
+      if (mois) chargerNoms(mois);
+    });
+    document.getElementById('selectNom').addEventListener('change', verifierSelection);
+  };
+
+  function chargerNoms(mois) {
+    document.getElementById('loadingNoms').style.display = 'block';
+    var select = document.getElementById('selectNom');
+    select.innerHTML = '<option value="">-- Sélectionnez votre nom --</option>';
+    callScript({ action: 'getDemandeurs', mois: mois })
+      .then(function(demandeurs) {
+        document.getElementById('loadingNoms').style.display = 'none';
+        demandeurs.forEach(function(d) {
+          var opt = document.createElement('option');
+          opt.value = d; opt.textContent = d;
+          select.appendChild(opt);
+        });
+      })
+      .catch(function(err) {
+        document.getElementById('loadingNoms').style.display = 'none';
+        select.innerHTML = '<option value="">Erreur chargement noms</option>';
+      });
+  }
+
+  function verifierSelection() {
+    var mois = document.getElementById('selectMois').value;
+    var nom  = document.getElementById('selectNom').value;
+    document.getElementById('btnContinuer').disabled = !(mois && nom);
+  }
+
+  // ============================================================
+  // STEP 1 → STEP 2
+  // ============================================================
+  function chargerDemandes() {
+    selectedMois = document.getElementById('selectMois').value;
+    selectedNom  = document.getElementById('selectNom').value;
+    if (!selectedMois || !selectedNom) return;
+
+    document.getElementById('step1').classList.remove('active');
+    document.getElementById('step2').classList.add('active');
+    document.getElementById('loadingDemandes').style.display = 'block';
+    document.getElementById('demandesList').innerHTML = '';
+
+    callScript({ action: 'getDemandes', nom: selectedNom, mois: selectedMois })
+      .then(function(demandes) {
+        document.getElementById('loadingDemandes').style.display = 'none';
+        var list = document.getElementById('demandesList');
+        if (!Array.isArray(demandes) || demandes.length === 0) {
+          list.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">✅ Tous vos bons sont déjà soumis !</p>';
+          return;
+        }
+        demandes.forEach(function(d) {
+          var div = document.createElement('div');
+          div.className = 'demande-item';
+          div.innerHTML =
+            '<span class="demande-num">' + d.numero + '</span>' +
+            '<span class="demande-montant">' + (d.montant ? Number(d.montant).toLocaleString('fr-DZ') + ' DZD' : '') + '</span>';
+          div.onclick = function() {
+            document.querySelectorAll('.demande-item').forEach(function(el) { el.classList.remove('selected'); });
+            div.classList.add('selected');
+            selectedDemande = d;
+            setTimeout(ouvrirStep3, 200);
+          };
+          list.appendChild(div);
+        });
+      })
+      .catch(function(err) {
+        document.getElementById('loadingDemandes').style.display = 'none';
+        document.getElementById('demandesList').innerHTML =
+          '<p style="color:#c62828;text-align:center;padding:20px;">❌ Erreur chargement : ' + err.message + '</p>';
+      });
+  }
+
+  function ouvrirStep3() {
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step3').classList.add('active');
+    document.getElementById('selectedNumero').textContent = selectedDemande.numero;
+    document.getElementById('selectedMontant').textContent =
+      selectedDemande.montant ? Number(selectedDemande.montant).toLocaleString('fr-DZ') + ' DZD' : '';
+    photos = [];
+    document.getElementById('previewGrid').innerHTML = '';
+    document.getElementById('photoCount').textContent = '';
+    document.getElementById('btnSoumettre').disabled = true;
+    document.getElementById('btnSoumettre').style.display = '';
+    document.getElementById('btnSoumettre').textContent = '✅ Soumettre le bon';
+    document.getElementById('photoZone').style.display = 'block';
+    document.getElementById('errorMsg').style.display = 'none';
+    document.getElementById('successMsg').style.display = 'none';
+    document.getElementById('progressBar').style.display = 'none';
+    document.getElementById('progressFill').style.width = '0%';
+  }
+
+  function retourStep1() {
+    document.getElementById('step2').classList.remove('active');
+    document.getElementById('step1').classList.add('active');
+  }
+
+  function retourStep2() {
+    document.getElementById('step3').classList.remove('active');
+    document.getElementById('step2').classList.add('active');
+  }
+
+  // ============================================================
+  // Compression image
+  // ============================================================
+  function compresserImage(file, callback) {
+    var reader = new FileReader();
+    reader.onerror = function() { callback(null, null, 'Lecture fichier impossible'); };
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onerror = function() { callback(null, null, 'Image invalide'); };
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var maxSize = 1200;
+        var w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        callback(dataUrl.split(',')[1], dataUrl, null);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ============================================================
+  // Ajout de photos (supporte sélection multiple)
+  // ============================================================
+  function ajouterPhotos(input) {
+    var files = Array.from(input.files);
+    if (!files.length) return;
+    var remaining = 5 - photos.length;
+    if (remaining <= 0) { alert('Maximum 5 photos atteint.'); input.value = ''; return; }
+    files.slice(0, remaining).forEach(function(file) {
+      compresserImage(file, function(base64, dataUrl, err) {
+        if (err) { showError('Erreur lecture image : ' + err); return; }
+        var i = photos.length;
+        photos.push({ base64: base64, dataUrl: dataUrl });
+        var grid = document.getElementById('previewGrid');
+        var item = document.createElement('div');
+        item.className = 'preview-item';
+        item.id = 'photo-item-' + i;
+        item.innerHTML =
+          '<img src="' + dataUrl + '">' +
+          '<button class="del-btn" onclick="supprimerPhoto(' + i + ')">×</button>';
+        grid.appendChild(item);
+        updatePhotoUI();
+      });
+    });
+    input.value = '';
+  }
+
+  function updatePhotoUI() {
+    document.getElementById('photoCount').textContent = photos.length > 0 ? photos.length + ' photo(s)' : '';
+    document.getElementById('btnSoumettre').disabled = photos.length === 0;
+    document.getElementById('photoZone').style.display = photos.length >= 5 ? 'none' : 'block';
+  }
+
+  function supprimerPhoto(idx) {
+    photos.splice(idx, 1);
+    var grid = document.getElementById('previewGrid');
+    grid.innerHTML = '';
+    photos.forEach(function(p, i) {
+      var item = document.createElement('div');
+      item.className = 'preview-item';
+      item.innerHTML =
+        '<img src="' + p.dataUrl + '">' +
+        '<button class="del-btn" onclick="supprimerPhoto(' + i + ')">×</button>';
+      grid.appendChild(item);
+    });
+    updatePhotoUI();
+  }
+
+  // ============================================================
+  // Soumission
+  // ============================================================
+  function showError(msg) {
+    var el = document.getElementById('errorMsg');
+    el.innerHTML = '❌ ' + msg;
+    el.style.display = 'block';
+  }
+
+  function soumettre() {
+    if (photos.length === 0) { showError('Ajoutez au moins une photo.'); return; }
+    var btn = document.getElementById('btnSoumettre');
+    btn.disabled = true;
+    document.getElementById('errorMsg').style.display = 'none';
+    var progressBar  = document.getElementById('progressBar');
+    var progressFill = document.getElementById('progressFill');
+    progressBar.style.display = 'block';
+    progressFill.style.width = '0%';
+
+    var total = photos.length;
+    var done  = 0;
+    var photoUrls = [];
+    var uploadErrors = [];
+
+    btn.textContent = '⏳ Upload photo 1/' + total + '...';
+
+    function uploaderSuivante(i) {
+      if (i >= total) {
+        // Toutes les photos sont uploadées
+        if (photoUrls.length === 0) {
+          progressBar.style.display = 'none';
+          showError('Échec upload de toutes les photos. Vérifiez votre connexion.<br><div class="error-detail">' + uploadErrors.join(' | ') + '</div>');
+          btn.disabled = false;
+          btn.textContent = '✅ Soumettre le bon';
+          return;
+        }
+
+        btn.textContent = '⏳ Enregistrement...';
+        progressFill.style.width = '90%';
+
+        // CORRECTION : envoyer les paramètres directement (pas via data=JSON)
+        callScript({
+          action: 'soumettrebon',
+          numero: selectedDemande.numero,
+          mois: selectedMois,
+          urls: photoUrls.join(',')
+        })
+        .then(function(result) {
+          progressFill.style.width = '100%';
+          setTimeout(function() { progressBar.style.display = 'none'; }, 500);
+          if (result && result.success) {
+            btn.style.display = 'none';
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('photoZone').style.display = 'none';
+            document.getElementById('previewGrid').style.display = 'none';
+            document.getElementById('photoCount').style.display = 'none';
+          } else {
+            showError((result && result.message) ? result.message : 'Erreur inconnue du serveur');
+            btn.disabled = false;
+            btn.textContent = '✅ Soumettre le bon';
+          }
+        })
+        .catch(function(err) {
+          progressBar.style.display = 'none';
+          showError('Erreur réseau : ' + err.message);
+          btn.disabled = false;
+          btn.textContent = '✅ Soumettre le bon';
+        });
+        return;
+      }
+
+      btn.textContent = '⏳ Upload photo ' + (i + 1) + '/' + total + '...';
+      progressFill.style.width = Math.round((i / (total + 1)) * 90) + '%';
+
+      uploadImgBB(photos[i].base64)
+        .then(function(url) {
+          photoUrls.push(url);
+          done++;
+          uploaderSuivante(i + 1);
+        })
+        .catch(function(err) {
+          // CORRECTION : on enregistre l'erreur au lieu de l'ignorer silencieusement
+          uploadErrors.push('Photo ' + (i + 1) + ': ' + err.message);
+          done++;
+          uploaderSuivante(i + 1);
+        });
+    }
+
+    uploaderSuivante(0);
+  }
+</script>
+</body>
+</html>
